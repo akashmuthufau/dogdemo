@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jumping Dog Game 🐶</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #dff9fb;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #game {
+      width: 100%;
+      height: 200px;
+      border-bottom: 4px solid #2f3640;
+      position: relative;
+      background-color: #c7ecee;
+    }
+
+    .dog {
+      font-size: 40px;
+      position: absolute;
+      bottom: 0;
+      left: 50px;
+      transition: bottom 0.2s;
+    }
+
+    .jump {
+      animation: jump 500ms ease;
+    }
+
+    @keyframes jump {
+      0%   { bottom: 0; }
+      50%  { bottom: 100px; }
+      100% { bottom: 0; }
+    }
+
+    .cactus {
+      font-size: 40px;
+      position: absolute;
+      bottom: 0;
+      right: -40px;
+      animation: moveCactus 2s linear infinite;
+    }
+
+    @keyframes moveCactus {
+      from { right: -40px; }
+      to   { right: 100%; }
+    }
+
+    #message {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game">
+    <div class="dog" id="dog">🐶</div>
+    <div class="cactus" id="cactus">🌵</div>
+  </div>
+  <div id="message">Press Space to Jump!</div>
+
+  <script>
+    const dog = document.getElementById('dog');
+    const cactus = document.getElementById('cactus');
+    const message = document.getElementById('message');
+
+    let isJumping = false;
+    let gameOver = false;
+
+    document.addEventListener('keydown', function (e) {
+      if (e.code === 'Space' && !isJumping && !gameOver) {
+        jump();
+      }
+    });
+
+    function jump() {
+      isJumping = true;
+      dog.classList.add('jump');
+      setTimeout(() => {
+        dog.classList.remove('jump');
+        isJumping = false;
+      }, 500);
+    }
+
+    const checkCollision = setInterval(() => {
+      const dogTop = parseInt(window.getComputedStyle(dog).getPropertyValue("bottom"));
+      const cactusRight = parseInt(window.getComputedStyle(cactus).getPropertyValue("right"));
+
+      // Adjust collision sensitivity
+      if (cactusRight > (window.innerWidth - 120) && cactusRight < (window.innerWidth - 50) && dogTop < 40) {
+        message.innerText = "💥 Game Over! Refresh to play again.";
+        cactus.style.animation = 'none';
+        cactus.style.right = cactusRight + 'px';
+        gameOver = true;
+        clearInterval(checkCollision);
+      }
+    }, 10);
+  </script>
+
+</body>
+</html>
