@@ -2,38 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Jumping Dog Game 🐶</title>
+  <title>🐶 Jumping Dog Game</title>
   <style>
     body {
       font-family: sans-serif;
-      background-color: #dff9fb;
       margin: 0;
+      background: linear-gradient(#a0e9f0, #f1f2f6);
       overflow: hidden;
     }
 
     #game {
-      width: 100%;
-      height: 200px;
-      border-bottom: 4px solid #2f3640;
       position: relative;
-      background-color: #c7ecee;
+      width: 100%;
+      height: 250px;
+      border-bottom: 5px solid #2f3640;
+      background: #c7ecee;
+      overflow: hidden;
     }
 
     .dog {
-      font-size: 40px;
+      font-size: 50px;
       position: absolute;
       bottom: 0;
       left: 50px;
-      transition: bottom 0.2s;
     }
 
     .jump {
-      animation: jump 500ms ease;
+      animation: jump 600ms ease-out;
     }
 
     @keyframes jump {
       0%   { bottom: 0; }
-      50%  { bottom: 100px; }
+      40%  { bottom: 120px; }
+      60%  { bottom: 120px; }
       100% { bottom: 0; }
     }
 
@@ -41,67 +42,144 @@
       font-size: 40px;
       position: absolute;
       bottom: 0;
-      right: -40px;
+      right: -60px;
       animation: moveCactus 2s linear infinite;
     }
 
     @keyframes moveCactus {
-      from { right: -40px; }
+      from { right: -60px; }
       to   { right: 100%; }
     }
 
-    #message {
+    #hud {
       text-align: center;
-      font-size: 24px;
-      margin-top: 20px;
+      padding: 10px;
+      font-size: 20px;
+      background: #dff9fb;
+    }
+
+    #restartBtn {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    #restartBtn:hover {
+      background: #2980b9;
     }
   </style>
 </head>
 <body>
 
-  <div id="game">
-    <div class="dog" id="dog">🐶</div>
-    <div class="cactus" id="cactus">🌵</div>
-  </div>
-  <div id="message">Press Space to Jump!</div>
+<div id="hud">
+  <span>Score: <span id="score">0</span></span>
+  <br>
+  <button id="restartBtn">🔄 Restart</button>
+</div>
 
-  <script>
-    const dog = document.getElementById('dog');
-    const cactus = document.getElementById('cactus');
-    const message = document.getElementById('message');
+<div id="game">
+  <div class="dog" id="dog">🐶</div>
+  <div class="cactus" id="cactus">🌵</div>
+</div>
 
-    let isJumping = false;
-    let gameOver = false;
+<!-- Sounds -->
+<audio id="barkSound" src="https://www.soundjay.com/animals/dog-bark-1.mp3" preload="auto"></audio>
+<audio id="gameOverSound" src="https://www.soundjay.com/button/button-10.mp3" preload="auto"></audio>
+<audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-funnysong.mp3" preload="auto" loop></audio>
 
-    document.addEventListener('keydown', function (e) {
-      if (e.code === 'Space' && !isJumping && !gameOver) {
-        jump();
+<script>
+  const dog = document.getElementById('dog');
+  const cactus = document.getElementById('cactus');
+  const scoreDisplay = document.getElementById('score');
+  const restartBtn = document.getElementById('restartBtn');
+  const barkSound = document.getElementById('barkSound');
+  const gameOverSound = document.getElementById('gameOverSound');
+  const bgMusic = document.getElementById('bgMusic');
+
+  let isJumping = false;
+  let gameOver = false;
+  let score = 0;
+  let cactusSpeed = 2000;
+  let cactusTypes = ["🌵", "🌴", "🪵"];
+  let scoreInterval;
+  let speedUpInterval;
+
+  function startGame() {
+    score = 0;
+    gameOver = false;
+    cactusSpeed = 2000;
+    scoreDisplay.textContent = score;
+    cactus.style.animation = `moveCactus ${cactusSpeed}ms linear infinite`;
+    cactus.textContent = randomCactus();
+    bgMusic.volume = 0.3;
+    bgMusic.play();
+    scoreInterval = setInterval(() => {
+      score++;
+      scoreDisplay.textContent = score;
+    }, 500);
+    speedUpInterval = setInterval(() => {
+      if (cactusSpeed > 800) {
+        cactusSpeed -= 100;
+        cactus.style.animation = `none`; // Reset animation
+        void cactus.offsetWidth;         // Trigger reflow
+        cactus.style.animation = `moveCactus ${cactusSpeed}ms linear infinite`;
+        cactus.textContent = randomCactus();
       }
-    });
+    }, 4000);
+  }
 
-    function jump() {
-      isJumping = true;
-      dog.classList.add('jump');
-      setTimeout(() => {
-        dog.classList.remove('jump');
-        isJumping = false;
-      }, 500);
+  function randomCactus() {
+    return cactusTypes[Math.floor(Math.random() * cactusTypes.length)];
+  }
+
+  function jump() {
+    if (isJumping || gameOver) return;
+    isJumping = true;
+    dog.classList.add('jump');
+    barkSound.play();
+    setTimeout(() => {
+      dog.classList.remove('jump');
+      isJumping = false;
+    }, 600);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') jump();
+  });
+
+  restartBtn.onclick = () => {
+    restartBtn.style.display = 'none';
+    cactus.style.animation = `moveCactus ${cactusSpeed}ms linear infinite`;
+    dog.innerHTML = "🐶";
+    startGame();
+  };
+
+  // Collision detection
+  const gameLoop = setInterval(() => {
+    const dogBottom = parseInt(window.getComputedStyle(dog).getPropertyValue("bottom"));
+    const cactusRight = parseInt(window.getComputedStyle(cactus).getPropertyValue("right"));
+
+    if (cactusRight > (window.innerWidth - 120) && cactusRight < (window.innerWidth - 50) && dogBottom < 40 && !gameOver) {
+      // Game over
+      gameOver = true;
+      dog.innerHTML = "💥";
+      cactus.style.animation = 'none';
+      bgMusic.pause();
+      gameOverSound.play();
+      clearInterval(scoreInterval);
+      clearInterval(speedUpInterval);
+      restartBtn.style.display = 'inline-block';
     }
+  }, 10);
 
-    const checkCollision = setInterval(() => {
-      const dogTop = parseInt(window.getComputedStyle(dog).getPropertyValue("bottom"));
-      const cactusRight = parseInt(window.getComputedStyle(cactus).getPropertyValue("right"));
-
-      // Adjust collision sensitivity
-      if (cactusRight > (window.innerWidth - 120) && cactusRight < (window.innerWidth - 50) && dogTop < 40) {
-        message.innerText = "💥 Game Over! Refresh to play again.";
-        cactus.style.animation = 'none';
-        cactus.style.right = cactusRight + 'px';
-        gameOver = true;
-        clearInterval(checkCollision);
-      }
-    }, 10);
-  </script>
+  startGame(); // Start on load
+</script>
 
 </body>
 </html>
